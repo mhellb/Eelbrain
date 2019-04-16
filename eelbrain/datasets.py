@@ -11,24 +11,6 @@ from . import _info, load
 from ._data_obj import Dataset, Factor, Var, NDVar, Case, Scalar, Sensor, Space, UTS
 from ._ndvar import concatenate, convolve
 from ._design import permute
-from ._utils.numpy_utils import newaxis
-
-
-def _apply_kernel(x, h, out=None):
-    """Predict ``y`` by applying kernel ``h`` to ``x``
-
-    x.shape is (n_stims, n_samples)
-    h.shape is (n_stims, n_trf_samples)
-    """
-    if out is None:
-        out = np.zeros(x.shape[1])
-    else:
-        out.fill(0)
-
-    for ind in range(len(h)):
-        out += np.convolve(h[ind], x[ind])[:len(out)]
-
-    return out
 
 
 def _get_continuous(n_samples=100, ynd=False, seed=0):
@@ -67,8 +49,7 @@ def _get_continuous(n_samples=100, ynd=False, seed=0):
                          [0, 0, 2, 2, 0, 0, 0, 0, 0, 0]]),
                (xdim, h_time), name='h2')
 
-    y = _apply_kernel(x1.x[newaxis], h1.x[newaxis])
-    y += _apply_kernel(x2.x, h2.x)
+    y = convolve(h1, x1) + convolve(h2, x2)
     y = NDVar(y, (time,), _info.for_eeg(), 'y')
     out = {'y': y, 'x1': x1, 'h1': h1, 'x2': x2, 'h2': h2}
     if ynd:
